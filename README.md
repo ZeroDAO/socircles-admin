@@ -1,2 +1,0 @@
-# socircles-admin
-socircles admin
