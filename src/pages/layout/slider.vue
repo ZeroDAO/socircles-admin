@@ -21,7 +21,7 @@ export default {
 
 	methods: {
 		toHome() {
-			location.href = "https://cool-js.com/";
+			location.href = "./";
 		}
 	}
 };

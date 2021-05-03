@@ -16,6 +16,7 @@ export const socketUrl = (isDev ? `${host}` : "") + "/socket";
 // 请求地址，本地会使用代理请求
 export const baseUrl = (function() {
 	let proxy = getUrlParam("proxy");
+	console.log(proxy);
 
 	if (proxy) {
 		store.set("proxy", proxy);

@@ -73,7 +73,6 @@
 
 <script>
 import { deepTree } from "cl-admin/utils";
-
 export default {
 	data() {
 		return {

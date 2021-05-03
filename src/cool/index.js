@@ -31,6 +31,8 @@ export default {
 		"chat",
 		// 任务管理
 		"task",
+		// circles 数据管理
+		"circles",
 		// 复制指令
 		"copy",
 		// 省市区选择
