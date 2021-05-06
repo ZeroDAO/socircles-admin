@@ -466,10 +466,11 @@ export default {
 			margin: 18px 0;
 		}
 		.el-table {
-			max-height: auto !important;
+			
 		}
+		.el-table__body-wrapper,
 		.el-table--scrollable-y {
-			max-height: 100% !important;
+			max-height: 600px !important;
 		}
 		button {
 			span {
