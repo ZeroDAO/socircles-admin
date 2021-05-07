@@ -1,14 +1,14 @@
 <template>
 	<div class="system-algo">
+		<div v-show="!job.inAlgo" class="start white-bg">
+			<p class="title">开始计算</p>
+			<cl-form ref="form" inner></cl-form>
+		</div>
 		<div v-if="inCrawler" class="stop-crawler white-bg">
 			<i class="el-icon-warning-outline"></i>
 			<span>有进行中的采集任务，先停止任务后进行计算</span>
 		</div>
-		<div v-else-if="!job.inAlgo" class="start white-bg">
-			<p class="title">开始计算</p>
-			<cl-form ref="form" inner></cl-form>
-		</div>
-		<div v-else class="algo">
+		<div v-else-if="job.inAlgo" class="algo">
 			<el-row :gutter="10">
 				<el-col :sm="24" :md="6">
 					<el-card class="box-card">
@@ -45,18 +45,39 @@
 					<el-card class="box-card">
 						<div slot="header" class="clearfix">
 							<span>任务</span>
-							<el-button
-								v-if="job.algoInfo.status == 1"
-								icon="el-icon-video-pause"
-								type="danger"
-								>暂停</el-button
-							>
-							<el-button
-								v-else
-								icon="el-icon-video-play"
-								type="primary"
-								>开始</el-button
-							>
+							<div class="set-btn">
+								<el-button
+									icon="el-icon-refresh-right"
+									circle
+									@click="refresh()"
+								></el-button>
+								<el-button
+									icon="el-icon-setting"
+									circle
+									@click="openSetEvery()"
+								></el-button>
+								<el-button
+									v-if="percentage.isDone"
+									icon="el-icon-s-claim"
+									type="warning"
+									@click="finish()"
+									>完成</el-button
+								>
+								<el-button
+									v-else-if="job.algoInfo.status == 1"
+									icon="el-icon-video-pause"
+									@click="pause()"
+									type="danger"
+									>暂停</el-button
+								>
+								<el-button
+									v-else
+									icon="el-icon-video-play"
+									type="primary"
+									@click="regain()"
+									>开始</el-button
+								>
+							</div>
 						</div>
 						<div class="item">
 							<div>
@@ -84,6 +105,15 @@
 						</div>
 						<el-divider></el-divider>
 						<div class="item">
+							<span>状态</span>
+							<el-tag v-if="job.sysInfo.status == 1" type="success">计算中</el-tag>
+							<el-tag v-else-if="job.sysInfo.status == 0" type="warning"
+								>计算完成</el-tag
+							>
+							<el-tag v-else type="danger">失败</el-tag>
+						</div>
+						<el-divider></el-divider>
+						<div class="item">
 							<span>Task ID</span>
 							<span>{{ job.algoInfo.task_id }}</span>
 						</div>
@@ -95,12 +125,17 @@
 						<el-divider></el-divider>
 						<div class="item">
 							<span>开始时间</span>
-							<span>{{ job.algoInfo.startDate }}</span>
+							<span>{{ job.algoInfo.createTime }}</span>
 						</div>
 						<el-divider></el-divider>
 						<div class="item">
 							<span>最近运行</span>
-							<span>{{ job.algoInfo.endData }}</span>
+							<span>{{ job.algoInfo.updateTime }}</span>
+						</div>
+						<el-divider></el-divider>
+						<div class="item">
+							<span>下次执行</span>
+							<span>{{ job.algoInfo.nextRunTime || '待定' }}</span>
 						</div>
 					</el-card>
 				</el-col>
@@ -110,7 +145,9 @@
 							<span>日志</span>
 						</div>
 						<cl-crud
+							v-if="job.algoInfo.id"
 							@load="onLoad"
+							ref="crud"
 							class="system-algo"
 							v-loading="logs.loading"
 							element-loading-text="loading"
@@ -123,6 +160,7 @@
 								<cl-pagination></cl-pagination>
 							</el-row>
 						</cl-crud>
+						<p class="no-log" v-else>未找到任务日志</p>
 					</el-card>
 				</el-col>
 			</el-row>
@@ -148,15 +186,16 @@ export default {
 					min_divisor: 10
 				},
 				algoInfo: {
-					task_id: 4,
+					task_id: null,
 					status: 0,
-					total_steps: 8,
-					curr_step: 2,
-					total_sub_step: 11,
-					curr_sub_step: 8,
-					every: 2000,
-					startDate: "2021-05-03 13:21:01",
-					endData: "2021-05-03 13:21:01"
+					total_steps: 7,
+					curr_step: 0,
+					total_sub_step: 1,
+					curr_sub_step: 0,
+					every: 0,
+					createTime: "",
+					updateTime: "",
+					nextRunTime: ""
 				}
 			},
 			inCrawler: false,
@@ -211,7 +250,7 @@ export default {
 	},
 
 	mounted() {
-		this.getCrawler()
+		this.getCrawler();
 	},
 
 	computed: {
@@ -219,13 +258,19 @@ export default {
 			return this.$service.circles.inAlgo.permission;
 		},
 		percentage() {
+			let total_sub_step = this.job.algoInfo.total_sub_step;
 			return {
 				step: Math.floor(
 					(this.job.algoInfo.curr_step / this.job.algoInfo.total_steps) * 100
 				),
-				sub_step: Math.floor(
-					(this.job.algoInfo.curr_sub_step / this.job.algoInfo.total_sub_step) * 100
-				)
+				sub_step:
+					total_sub_step == 0
+						? 0
+						: Math.floor((this.job.algoInfo.curr_sub_step / total_sub_step) * 100),
+				isDone:
+					this.job.algoInfo.curr_sub_step == total_sub_step &&
+					this.job.algoInfo.curr_step == this.job.algoInfo.total_steps &&
+					total_sub_step != 0
 			};
 		}
 	},
@@ -235,20 +280,48 @@ export default {
 			ctx.service(this.$service.task.log).done();
 			app.refresh({ taskId: this.job.algoInfo.task_id });
 		},
+		pause() {
+			this.$service.circles.algo
+				.pause()
+				.then(() => {
+					this.refJob();
+				})
+				.catch((err) => {
+					this.$message.error(err.message);
+				});
+		},
+		regain() {
+			this.$service.circles.algo
+				.regain()
+				.then(() => {
+					this.refJob();
+				})
+				.catch((err) => {
+					this.$message.error(err);
+				});
+		},
+		finish() {
+			this.$service.circles.algo
+				.finish()
+				.then(() => {
+					this.refJob();
+				})
+				.catch((err) => {
+					this.$message.error(err);
+				});
+		},
 		async getCrawler() {
 			this.$service.circles.crawler
 				.info()
 				.then((res) => {
-					if (res) {
-						this.inCrawler = res.info.status == 1;
-						if (res.info.status != 1) {
-							this.refJob();
-						}
-					}
+					if (!res) return;
+					console.log(res);
+					this.inCrawler = res.status == 1;
+					if (res.status == 1) return;
+					this.refJob();
 				})
 				.catch((err) => {
-					this.$message.error(err);
-					done();
+					this.$message.error(err.message);
 				});
 		},
 		refsForm() {
@@ -265,12 +338,15 @@ export default {
 							name: "el-input-number",
 							attrs: {
 								placeholder: "种子用户的数量"
+							},
+							props: {
+								min: 1,
+								max: 10000
 							}
 						},
 						rules: {
 							required: true,
-							min: 1,
-							message: "数量需要大于1"
+							message: "数量不可为空"
 						}
 					},
 					{
@@ -280,12 +356,14 @@ export default {
 							name: "el-input-number",
 							attrs: {
 								placeholder: "种子用户初始化得分"
+							},
+							props: {
+								min: 1
 							}
 						},
 						rules: {
 							required: true,
-							min: 1,
-							message: "必须大于1"
+							message: "初始化声誉值不可为空"
 						}
 					},
 					{
@@ -295,13 +373,15 @@ export default {
 							name: "el-input-number",
 							attrs: {
 								placeholder: "用于声誉算法的阻尼系数"
+							},
+							props: {
+								min: 0.1,
+								max: 1
 							}
 						},
 						rules: {
 							required: true,
-							min: 0.1,
-							max: 1,
-							message: "介于0.1 ~ 1之间"
+							message: "阻尼系数不可为空"
 						}
 					},
 					{
@@ -311,12 +391,14 @@ export default {
 							name: "el-input-number",
 							attrs: {
 								placeholder: "声誉算法的最小除数"
+							},
+							props: {
+								min: 1
 							}
 						},
 						rules: {
 							required: true,
-							min: 1,
-							message: "需要大于1"
+							message: "最小除数不可为空"
 						}
 					},
 					{
@@ -334,11 +416,11 @@ export default {
 								},
 								{
 									label: "PageRank",
-									value: "pagerank"
+									value: "pageRank"
 								},
 								{
 									label: "ArticleRank",
-									value: "articlerank"
+									value: "articleRank"
 								},
 								{
 									label: "Degree Centrality",
@@ -370,20 +452,23 @@ export default {
 							name: "el-input-number",
 							attrs: {
 								placeholder: "调度任务的监测周期"
+							},
+							props: {
+								min: 1
 							}
 						},
 						rules: {
 							required: true,
-							min: 1,
-							message: "时间需要大于1"
+							message: "间隔时间不可为空"
 						}
 					}
 				],
 				on: {
 					submit: (data, { close, done }) => {
 						// 提交
+						data.every *= 1000;
 						this.$message.success("开始");
-						this.$service.crawler.algo
+						this.$service.circles.algo
 							.start(data)
 							.then(() => {
 								return this.refJob();
@@ -401,19 +486,64 @@ export default {
 			this.$service.circles.algo
 				.jobInfo()
 				.then((res) => {
+					console.log(res);
+
 					if (res) {
-						this.job = res;
+						this.job.sysInfo = res.sysInfo;
+						this.job.inAlgo = res.inAlgo;
+						if (!res.inAlgo) {
+							this.job.algoInfo = res.algoInfo;
+							this.refsForm();
+						} else {
+							this.job.algoInfo = res.algoInfo;
+						}
 					}
 					this.logs.loading = false;
-					if (!res.inAlgo) {
-						this.refsForm();
-					}
 				})
 				.catch((err) => {
-					this.$message.error(err);
+					this.$message.error(err.message);
 					this.logs.loading = false;
-					done();
 				});
+		},
+		async openSetEvery() {
+			this.$crud.openForm({
+				title: "设置",
+				width: "600px",
+				items: [
+					{
+						prop: "every",
+						label: "轮询间隔",
+						value: this.job.algoInfo.every ? this.job.algoInfo.every / 1000 : 300,
+						props: {
+							"controls-position": "right"
+						},
+						component: {
+							name: "el-input-number"
+						}
+					}
+				],
+				on: {
+					submit: (data, { close, done }) => {
+						if (!data || data.every != this.job.algoInfo.every / 1000) {
+							this.$service.circles.algo
+								.set_algo_every({ every: data.every * 1000 })
+								.then(() => {
+									this.refJob();
+									this.$message.success("保存成功");
+								})
+								.catch((err) => {
+									this.$message.error(err.message);
+									done();
+								});
+						}
+						close();
+					}
+				}
+			});
+		},
+		refresh() {
+			this.refJob();
+			this.$refs["crud"].refresh({ taskId: this.job.algoInfo.task_id });
 		}
 	}
 };
@@ -435,6 +565,16 @@ export default {
 .system-algo {
 	overflow-y: scroll;
 	font-size: 14px;
+	.stop-crawler {
+		text-align: center;
+		padding: 50px;
+		i {
+			display: block;
+			font-size: 3em;
+			color: firebrick;
+			margin-bottom: 20px;
+		}
+	}
 	.start {
 		.cl-form {
 			max-width: 600px;
@@ -465,9 +605,6 @@ export default {
 		.el-divider--horizontal {
 			margin: 18px 0;
 		}
-		.el-table {
-			
-		}
 		.el-table__body-wrapper,
 		.el-table--scrollable-y {
 			max-height: 600px !important;
@@ -477,8 +614,16 @@ export default {
 				font-size: 14px !important;
 				font-weight: normal !important;
 			}
-			float: right;
-			padding: 5px 10px;
+		}
+		.clearfix {
+			display: flex;
+			justify-content: space-between;
+			align-content: center;
+		}
+		.no-log {
+			margin: 5px auto;
+			text-align: center;
+			color: #868585;
 		}
 	}
 }

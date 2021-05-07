@@ -12,11 +12,10 @@ class Crawler extends BaseService {
 	}
 
 	@Permission("info")
-	info(data) {
+	info() {
 		return this.request({
 			url: "/getInfo",
-			method: "POST",
-			data
+			method: "POST"
 		});
 	}
 

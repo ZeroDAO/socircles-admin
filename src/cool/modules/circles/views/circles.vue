@@ -215,7 +215,7 @@ export default {
 						.then((res) => {
 							if (res.list.length > 0) {
 								res.list.map((e) => {
-									if (/^[0-9]+,[0-9]+,[0-9]$/.test(e.detail)) {
+									if (/^[0-9]+,[0-9]+,[0-9]+$/.test(e.detail)) {
 										let countArr = e.detail.split(",");
 										e.count = countArr[0];
 										e.userCount = countArr[1];
