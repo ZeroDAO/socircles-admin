@@ -41,7 +41,7 @@
 						</div>
 					</el-card>
 				</el-col>
-				<el-col :sm="24" :md="6">
+				<el-col :sm="24" :md="8">
 					<el-card class="box-card">
 						<div slot="header" class="clearfix">
 							<span>任务</span>
@@ -56,29 +56,45 @@
 									circle
 									@click="openSetEvery()"
 								></el-button>
-								<el-button
-									v-if="percentage.isDone"
-									icon="el-icon-s-claim"
-									type="warning"
-									@click="finish()"
-									>完成</el-button
+							</div>
+						</div>
+						<div class="item">
+							<div>
+								<el-tag v-if="job.sysInfo.status == 1" type="success"
+									>计算中</el-tag
 								>
-								<el-button
-									v-else-if="job.algoInfo.status == 1"
-									icon="el-icon-video-pause"
-									@click="pause()"
-									type="danger"
-									>暂停</el-button
+								<el-tag v-else-if="job.sysInfo.status == 0" type="warning"
+									>计算完成</el-tag
 								>
+								<el-tag v-else type="danger">失败</el-tag>
+							</div>
+							<el-button
+								v-if="percentage.isDone"
+								icon="el-icon-s-claim"
+								type="warning"
+								@click="finish()"
+								>完成</el-button
+							>
+							<el-button
+								v-else-if="job.algoInfo.status == 1"
+								icon="el-icon-video-pause"
+								@click="pause()"
+								type="danger"
+								>暂停</el-button
+							>
+							<div v-else>
 								<el-button
-									v-else
 									icon="el-icon-video-play"
 									type="primary"
-									@click="regain()"
-									>开始</el-button
+									@click="recover()"
+									>恢复</el-button
+								>
+								<el-button icon="el-icon-video-play" type="danger" @click="regain()"
+									>回退</el-button
 								>
 							</div>
 						</div>
+						<el-divider></el-divider>
 						<div class="item">
 							<div>
 								<span>总任务进度</span>
@@ -105,15 +121,6 @@
 						</div>
 						<el-divider></el-divider>
 						<div class="item">
-							<span>状态</span>
-							<el-tag v-if="job.sysInfo.status == 1" type="success">计算中</el-tag>
-							<el-tag v-else-if="job.sysInfo.status == 0" type="warning"
-								>计算完成</el-tag
-							>
-							<el-tag v-else type="danger">失败</el-tag>
-						</div>
-						<el-divider></el-divider>
-						<div class="item">
 							<span>Task ID</span>
 							<span>{{ job.algoInfo.task_id }}</span>
 						</div>
@@ -135,11 +142,11 @@
 						<el-divider></el-divider>
 						<div class="item">
 							<span>下次执行</span>
-							<span>{{ job.algoInfo.nextRunTime || '待定' }}</span>
+							<span>{{ job.algoInfo.nextRunTime || "待定" }}</span>
 						</div>
 					</el-card>
 				</el-col>
-				<el-col :sm="24" :md="12">
+				<el-col :sm="24" :md="10">
 					<el-card class="box-card">
 						<div slot="header" class="clearfix">
 							<span>日志</span>
@@ -283,6 +290,16 @@ export default {
 		pause() {
 			this.$service.circles.algo
 				.pause()
+				.then(() => {
+					this.refJob();
+				})
+				.catch((err) => {
+					this.$message.error(err.message);
+				});
+		},
+		recover() {
+			this.$service.circles.algo
+				.recover()
 				.then(() => {
 					this.refJob();
 				})

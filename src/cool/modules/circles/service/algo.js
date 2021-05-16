@@ -26,6 +26,14 @@ class Algo extends BaseService {
 		});
 	}
 
+	@Permission("recover")
+	recover() {
+		return this.request({
+			url: "/recover",
+			method: "POST"
+		});
+	}
+
 	@Permission("regain")
 	regain() {
 		return this.request({
