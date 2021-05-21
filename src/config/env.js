@@ -8,7 +8,7 @@ export const routerMode = "history";
 export const isDev = process.env.NODE_ENV == "development";
 
 // Host
-export const host = "https://show.cool-admin.com";
+export const host = "https://admin.socircles.info";
 
 // Socket
 export const socketUrl = (isDev ? `${host}` : "") + "/socket";
@@ -32,7 +32,7 @@ export const iconfontUrl = ``;
 
 // 程序配置参数
 export const app = store.get("__app__") || {
-	name: "COOL-ADMIN",
+	name: "SoCircles",
 
 	conf: {
 		showAMenu: false, // 是否显示一级菜单栏

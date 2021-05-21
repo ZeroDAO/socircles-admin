@@ -1,8 +1,8 @@
 <template>
 	<div class="app-slider">
 		<div class="app-slider__logo" @click="toHome">
-			<img src="@/assets/icon/logo/silder-simple.png" />
-			<span v-if="!menuCollapse || browser.isMini">{{ app.name }}</span>
+			<img v-if="!menuCollapse || browser.isMini" src="@/assets/icon/logo/socircles-logo.png" />
+			<img v-else src="@/assets/icon/logo/socircles-icon.png" />
 		</div>
 
 		<div class="app-slider__menu">
@@ -42,7 +42,6 @@ export default {
 
 		img {
 			height: 30px;
-			width: 30px;
 		}
 
 		span {

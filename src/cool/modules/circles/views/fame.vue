@@ -53,10 +53,6 @@ export default {
 							attrs: {
 								placeholder: "填写用户ID"
 							}
-						},
-						rules: {
-							required: true,
-							message: "ID不能为空"
 						}
 					},
 					{
